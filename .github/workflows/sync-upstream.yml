@@ -1,0 +1,173 @@
+name: Sync Upstream
+
+# 每日自动合并上游 sanrokamlan-prog/komari-theme-Glassmorphism 的 main，
+# 构建验证通过后推送；若上游版本号变化则自动打 tag 并发布 Release。
+# 合并冲突或构建失败时自动开 issue 提醒人工处理。
+
+on:
+  schedule:
+    - cron: '23 5 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_REPO: https://github.com/sanrokamlan-prog/komari-theme-Glassmorphism.git
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream
+        id: fetch
+        run: |
+          git remote add upstream "$UPSTREAM_REPO"
+          git fetch upstream main --tags
+          upstream_sha="$(git rev-parse upstream/main)"
+          merge_base="$(git merge-base HEAD upstream/main)"
+          echo "upstream_sha=${upstream_sha}" >> "$GITHUB_OUTPUT"
+          if [ "$merge_base" = "$upstream_sha" ]; then
+            echo "up_to_date=true" >> "$GITHUB_OUTPUT"
+            echo "Already contains upstream/main (${upstream_sha}). Nothing to sync."
+          else
+            echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Record pre-merge theme version
+        if: steps.fetch.outputs.up_to_date != 'true'
+        id: before
+        run: |
+          version="$(node -p "require('./komari-theme.json').version")"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Merge upstream/main
+        if: steps.fetch.outputs.up_to_date != 'true'
+        id: merge
+        run: |
+          set +e
+          git merge --no-edit upstream/main
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            conflicts="$(git diff --name-only --diff-filter=U | head -50)"
+            git merge --abort || true
+            echo "conflicted=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "conflicts<<EOF"
+              echo "$conflicts"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "conflicted=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open issue on merge conflict
+        if: steps.fetch.outputs.up_to_date != 'true' && steps.merge.outputs.conflicted == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFLICTS: ${{ steps.merge.outputs.conflicts }}
+          UPSTREAM_SHA: ${{ steps.fetch.outputs.upstream_sha }}
+        run: |
+          existing="$(gh issue list --label sync-conflict --state open --json number --jq 'length')"
+          if [ "$existing" -gt 0 ]; then
+            echo "An open sync-conflict issue already exists; skipping duplicate."
+            exit 1
+          fi
+          gh label create sync-conflict --color D93F0B --description "Upstream sync merge conflict" 2>/dev/null || true
+          gh issue create \
+            --title "Upstream sync conflict ($(date -u +%F))" \
+            --label sync-conflict \
+            --body "$(printf '自动同步上游时合并冲突，需要人工处理。\n\n上游 commit: %s\n\n冲突文件:\n```\n%s\n```\n\n本地处理步骤:\n```bash\ngit fetch upstream main\ngit merge upstream/main   # 解决冲突\nbun install && bun run build\ngit push origin main\n```' "$UPSTREAM_SHA" "$CONFLICTS")"
+          exit 1
+
+      - name: Set up Bun
+        if: steps.fetch.outputs.up_to_date != 'true' && steps.merge.outputs.conflicted == 'false'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Set up Node.js
+        if: steps.fetch.outputs.up_to_date != 'true' && steps.merge.outputs.conflicted == 'false'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        if: steps.fetch.outputs.up_to_date != 'true' && steps.merge.outputs.conflicted == 'false'
+        run: bun install --frozen-lockfile
+
+      - name: Build merged code
+        if: steps.fetch.outputs.up_to_date != 'true' && steps.merge.outputs.conflicted == 'false'
+        id: build
+        run: |
+          set +e
+          bun run build 2>&1 | tee build.log
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "status=${status}" >> "$GITHUB_OUTPUT"
+          if [ "$status" -ne 0 ]; then
+            tail -80 build.log > build-tail.log
+          fi
+          exit 0
+
+      - name: Open issue on build failure
+        if: steps.fetch.outputs.up_to_date != 'true' && steps.merge.outputs.conflicted == 'false' && steps.build.outputs.status != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPSTREAM_SHA: ${{ steps.fetch.outputs.upstream_sha }}
+        run: |
+          existing="$(gh issue list --label sync-conflict --state open --json number --jq 'length')"
+          if [ "$existing" -gt 0 ]; then
+            echo "An open sync-conflict issue already exists; skipping duplicate."
+            exit 1
+          fi
+          gh label create sync-conflict --color D93F0B --description "Upstream sync merge conflict" 2>/dev/null || true
+          gh issue create \
+            --title "Upstream sync build failure ($(date -u +%F))" \
+            --label sync-conflict \
+            --body "$(printf '上游代码合并成功但构建失败——多半是上游重构了三网面板依赖的接口，需要人工适配。\n\n上游 commit: %s\n\n构建日志尾部:\n```\n%s\n```' "$UPSTREAM_SHA" "$(cat build-tail.log)")"
+          exit 1
+
+      - name: Push merged main
+        if: steps.fetch.outputs.up_to_date != 'true' && steps.merge.outputs.conflicted == 'false' && steps.build.outputs.status == '0'
+        run: git push origin main
+
+      - name: Release when upstream version bumped
+        if: steps.fetch.outputs.up_to_date != 'true' && steps.merge.outputs.conflicted == 'false' && steps.build.outputs.status == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE_VERSION: ${{ steps.before.outputs.version }}
+        run: |
+          version="$(node -p "require('./komari-theme.json').version")"
+          if [ "$version" = "$BEFORE_VERSION" ]; then
+            echo "Theme version unchanged (${version}); no release."
+            exit 0
+          fi
+          tag="v${version}"
+          if git rev-parse "refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "Tag ${tag} already exists; skipping release."
+            exit 0
+          fi
+          git tag -a "${tag}" -m "Release ${tag} (three-network)"
+          git push origin "${tag}"
+          gh release create "${tag}" \
+            --title "${tag} + 三网延迟面板" \
+            --generate-notes \
+            --notes "自动同步上游 ${tag} 并叠加三网(联通/电信/移动)延迟丢包面板。" \
+            komari-theme-Glassmorphism-build*.zip
