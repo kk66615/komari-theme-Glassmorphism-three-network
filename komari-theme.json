@@ -57,6 +57,7 @@
       { "key": "diskPredictionThresholdDays", "name": "磁盘预测预警天数", "type": "number", "default": 30, "help": "预计剩余天数小于等于该值时在节点卡片和详情负载图中显示提示（1-3650）" },
 
       { "name": "06 · 节点详情概览卡片", "type": "title" },
+      { "key": "carrierPingPanelsEnabled", "name": "节点卡三网延迟面板", "type": "switch", "default": true, "help": "开启后首页节点卡的延迟/丢包面板按中国联通、电信、移动分行显示（按 Ping 任务名称匹配：联通/Unicom/CUCC、电信/Telecom/CTCC/CN2、移动/Mobile/CMCC/CMIN2）；关闭后恢复原版单行面板。" },
       { "key": "nodeDetailSectionTabsEnabled", "name": "详情页分区标签页", "type": "switch", "default": false, "help": "默认关闭，保持节点详情页纵向连续展示；开启后按概览、负载、延迟分区显示。" },
       { "key": "detailMetricCardPreset", "name": "详情概览卡片方案", "type": "select", "default": "财务", "options": "财务,状态,资源,网络,GPU,综合,自定义", "help": "宽屏每行 4 张，中屏 3 张，移动端 2 张。财务/状态/网络/GPU=8 张；资源=12 张；综合=16 张；自定义读取下方 keys。" },
       { "key": "detailMetricCardKeys", "name": "自定义详情卡片 keys", "type": "richtext", "default": "nodePrice\nmonthlyCost\nremainingTime\nremainingValue\ntotalTraffic\ntrafficQuota\nuptime\nconnections", "help": "逗号、空格或换行分隔。 nodePrice=节点价格； monthlyCost=月均支出； remainingTime=剩余时间； remainingValue=剩余价值； cpuUsage=CPU使用率； gpuUsage=GPU使用率； memoryUsage=内存使用率； swapUsage=交换内存使用率； diskUsage=硬盘使用率； load=系统负载； temperature=系统温度； processes=进程数； connections=连接数； uptime=运行时间； uploadSpeed=实时上行； downloadSpeed=实时下行； totalTraffic=累计流量； trafficQuota=流量配额。" },

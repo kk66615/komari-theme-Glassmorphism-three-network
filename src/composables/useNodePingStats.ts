@@ -21,17 +21,18 @@ export interface NodePingStatsState {
   hasData: boolean
 }
 
-interface PingRecord {
+export interface PingRecord {
   client: string
   task_id: number
   time: string
   value: number
 }
 
-interface MetricLossPoint {
+export interface MetricLossPoint {
   time: string
   value: number
   count: number
+  task_id?: number
 }
 
 function normalizeMaxCount(maxCount: number | null | undefined): number | undefined {
@@ -40,14 +41,14 @@ function normalizeMaxCount(maxCount: number | null | undefined): number | undefi
   return Math.floor(maxCount)
 }
 
-interface SharedPingRecordsState {
+export interface SharedPingRecordsState {
   recordsByClient: Map<string, PingRecord[]>
   source: 'metric' | 'legacy'
   metricStats?: PingMetricTaskStats[]
   metricLossPoints?: MetricLossPoint[]
 }
 
-interface SharedPingRecordsEntry {
+export interface SharedPingRecordsEntry {
   data: ReturnType<typeof shallowRef<SharedPingRecordsState | null>>
   loading: ReturnType<typeof ref<boolean>>
   error: ReturnType<typeof ref<string | null>>
@@ -61,7 +62,7 @@ const HISTORY_BUCKET_COUNT = 20
 const CACHE_VERSION = 8
 const CACHE_KEY_PREFIX = 'komari-theme-emerald:node-ping-stats'
 const FULL_LOSS_EPSILON = 1e-6
-const PING_RECORD_REFRESH_INTERVAL_MS = 60_000
+export const PING_RECORD_REFRESH_INTERVAL_MS = 60_000
 const sharedPingRecordsCache = new Map<string, SharedPingRecordsEntry>()
 
 interface TaskRecordSummary {
@@ -207,7 +208,7 @@ function createSharedPingRecordsEntry(): SharedPingRecordsEntry {
   }
 }
 
-function getSharedPingRecordsEntry(hours: number, maxCount?: number, uuid?: string): SharedPingRecordsEntry {
+export function getSharedPingRecordsEntry(hours: number, maxCount?: number, uuid?: string): SharedPingRecordsEntry {
   const key = getSharedPingRecordsKey(hours, maxCount, uuid)
   const cachedEntry = sharedPingRecordsCache.get(key)
   if (cachedEntry)
@@ -239,7 +240,7 @@ function buildRecordsByClient(records: PingRecord[]): Map<string, PingRecord[]> 
   return grouped
 }
 
-function normalizeTaskId(taskId: string): number {
+export function normalizeTaskId(taskId: string): number {
   if (!taskId.trim())
     return Number.NaN
 
@@ -307,6 +308,7 @@ async function loadPingMetricRecords(nodeUuid: string, hours: number, maxCount?:
             time: point.time,
             value: point.value,
             count: isFiniteNumber(point.count) && point.count > 0 ? point.count : 1,
+            task_id: taskId,
           })
           metricLossTaskIds.add(taskId)
         }
@@ -349,7 +351,7 @@ async function loadPingMetricRecords(nodeUuid: string, hours: number, maxCount?:
   }
 }
 
-async function loadSharedPingRecords(entry: SharedPingRecordsEntry, hours: number, maxCount?: number, nodeUuid?: string): Promise<void> {
+export async function loadSharedPingRecords(entry: SharedPingRecordsEntry, hours: number, maxCount?: number, nodeUuid?: string): Promise<void> {
   if (entry.promise)
     return entry.promise
 
@@ -421,7 +423,7 @@ function abortSharedPingRecordsRequests(hours: number, maxCount?: number, uuid?:
   })
 }
 
-function retainSharedPingRecordsEntry(hours: number, maxCount?: number, uuid?: string): () => void {
+export function retainSharedPingRecordsEntry(hours: number, maxCount?: number, uuid?: string): () => void {
   const entry = getSharedPingRecordsEntry(hours, maxCount, uuid)
   entry.subscribers += 1
   startSharedPingRecordsRefresh(entry, hours, maxCount, uuid)
@@ -440,7 +442,7 @@ function retainSharedPingRecordsEntry(hours: number, maxCount?: number, uuid?: s
   }
 }
 
-function buildPingHistory(records: PingRecord[], metricLossPoints?: MetricLossPoint[]): NodePingHistoryPoint[] {
+export function buildPingHistory(records: PingRecord[], metricLossPoints?: MetricLossPoint[]): NodePingHistoryPoint[] {
   const sortedRecords = records
     .map((record) => {
       const timestamp = new Date(record.time).getTime()
@@ -523,7 +525,7 @@ function buildPingHistory(records: PingRecord[], metricLossPoints?: MetricLossPo
   return history
 }
 
-function getPercentile(values: number[], percentile: number): number | null {
+export function getPercentile(values: number[], percentile: number): number | null {
   if (!values.length)
     return null
 

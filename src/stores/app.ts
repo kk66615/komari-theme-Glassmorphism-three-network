@@ -1109,6 +1109,8 @@ const useAppStore = defineStore('app', () => {
 
   const nodeDetailSectionTabsEnabled = computed<boolean>(() => readBooleanSetting(themeSettings.value, 'nodeDetailSectionTabsEnabled', false))
 
+  const carrierPingPanelsEnabled = computed<boolean>(() => readBooleanSetting(themeSettings.value, 'carrierPingPanelsEnabled', true))
+
   const gpuChartEnabled = computed<boolean>(() => readBooleanSetting(themeSettings.value, 'gpuChartEnabled', false))
 
   const detailMetricCardOrder = computed<DetailMetricCardKey[]>(() => {
@@ -1334,6 +1336,7 @@ const useAppStore = defineStore('app', () => {
     nodeListMetadataFields,
     nodeListCustomTagsVisible,
     nodeDetailSectionTabsEnabled,
+    carrierPingPanelsEnabled,
     gpuChartEnabled,
     detailMetricCardOrder,
     offlineNodesLast,
