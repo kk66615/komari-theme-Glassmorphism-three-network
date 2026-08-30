@@ -538,7 +538,7 @@ function hasRegion(region: string | null | undefined): boolean {
               <span class="text-[10px] text-muted-foreground/70">三网</span>
             </div>
 
-            <div class="grid min-h-0 flex-1 grid-rows-3 gap-1">
+            <div data-node-ping-bars="latency" class="grid min-h-0 flex-1 grid-rows-3 gap-1">
               <div
                 v-for="carrier in carrierDisplays"
                 :key="`${carrier.key}-latency`"
@@ -582,7 +582,7 @@ function hasRegion(region: string | null | undefined): boolean {
               <span class="text-[10px] text-muted-foreground/70">三网</span>
             </div>
 
-            <div class="grid min-h-0 flex-1 grid-rows-3 gap-1">
+            <div data-node-ping-bars="loss" class="grid min-h-0 flex-1 grid-rows-3 gap-1">
               <div
                 v-for="carrier in carrierDisplays"
                 :key="`${carrier.key}-loss`"

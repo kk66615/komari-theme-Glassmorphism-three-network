@@ -1109,7 +1109,7 @@ const useAppStore = defineStore('app', () => {
 
   const nodeDetailSectionTabsEnabled = computed<boolean>(() => readBooleanSetting(themeSettings.value, 'nodeDetailSectionTabsEnabled', false))
 
-  const carrierPingPanelsEnabled = computed<boolean>(() => readBooleanSetting(themeSettings.value, 'carrierPingPanelsEnabled', true))
+  const carrierPingPanelsEnabled = computed<boolean>(() => readBooleanSetting(themeSettings.value, 'carrierPingPanelsEnabled', false))
 
   const gpuChartEnabled = computed<boolean>(() => readBooleanSetting(themeSettings.value, 'gpuChartEnabled', false))
 

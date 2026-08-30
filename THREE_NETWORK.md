@@ -10,26 +10,26 @@
 
 按 **Ping 任务名称**正则匹配（在 Komari 后台创建 Ping 任务时命名需含关键词）：
 
-| 运营商 | 匹配关键词 |
-| --- | --- |
-| 联通 | `联通`、`China Unicom`、`Unicom`、`CUCC`、`CUVIP`、`9929`、`10099` |
-| 电信 | `电信`、`China Telecom`、`Telecom`、`CTCC`、`Chinanet`、`CN2`、`CTGNet` |
-| 移动 | `移动`、`China Mobile`、`Mobile`、`CMCC`、`CMI`、`CMIN2` |
+| 运营商 | 匹配关键词                                                              |
+| ------ | ----------------------------------------------------------------------- |
+| 联通   | `联通`、`China Unicom`、`Unicom`、`CUCC`、`CUVIP`、`9929`、`10099`      |
+| 电信   | `电信`、`China Telecom`、`Telecom`、`CTCC`、`Chinanet`、`CN2`、`CTGNet` |
+| 移动   | `移动`、`China Mobile`、`Mobile`、`CMCC`、`CMI`、`CMIN2`                |
 
 ## 主题设置
 
-后台「主题设置」新增开关 **节点卡三网延迟面板**（`carrierPingPanelsEnabled`，默认开启）。关闭后恢复上游原版单行延迟/丢包面板——如果某次上游同步后三网面板出现异常，可先关掉此开关顶着用。
+后台「主题设置」新增开关 **节点卡三网延迟面板**（`carrierPingPanelsEnabled`，**默认关闭**，装好主题后在后台打开一次即可，设置持久化）。默认关闭是刻意的：上游的 Playwright 视觉回归基线按原版单行面板截图，默认不改变外观可让整个上游测试套件与基线在本仓库原样通过，upstream 同步永不因截图冲突。若某次同步后三网面板异常，关掉开关即回到原版面板。
 
 ## 改动面（相对上游）
 
-| 文件 | 改动 |
-| --- | --- |
-| `src/composables/useNodeCarrierPingStats.ts` | 新增：按运营商归类任务并计算延迟/丢包/波动 |
-| `src/composables/useNodeCarrierPingDisplay.ts` | 新增：三网面板展示层（复用上游 signal 色阶与色觉辅助纹理） |
-| `src/composables/useNodePingStats.ts` | 最小改动：为若干内部函数/类型加 `export`；`MetricLossPoint` 增加可选 `task_id` |
-| `src/components/NodeCard.vue` | 延迟/丢包面板按开关二选一渲染 |
-| `src/stores/app.ts` | 新增 `carrierPingPanelsEnabled` 设置 |
-| `komari-theme.json` | 新增开关条目 |
+| 文件                                           | 改动                                                                           |
+| ---------------------------------------------- | ------------------------------------------------------------------------------ |
+| `src/composables/useNodeCarrierPingStats.ts`   | 新增：按运营商归类任务并计算延迟/丢包/波动                                     |
+| `src/composables/useNodeCarrierPingDisplay.ts` | 新增：三网面板展示层（复用上游 signal 色阶与色觉辅助纹理）                     |
+| `src/composables/useNodePingStats.ts`          | 最小改动：为若干内部函数/类型加 `export`；`MetricLossPoint` 增加可选 `task_id` |
+| `src/components/NodeCard.vue`                  | 延迟/丢包面板按开关二选一渲染                                                  |
+| `src/stores/app.ts`                            | 新增 `carrierPingPanelsEnabled` 设置                                           |
+| `komari-theme.json`                            | 新增开关条目                                                                   |
 
 ## 与上游同步
 
