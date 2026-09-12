@@ -2,6 +2,7 @@ import type { Client, NodeStatus } from '@/utils/rpc'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { gpuUsageFromStatus } from '@/utils/gpuHelper'
 import { parseNodeGroups } from '@/utils/groupHelper'
 
 /** 流量限制类型 */
@@ -237,8 +238,9 @@ const useNodesStore = defineStore('nodes', () => {
       node.time = status.time
     if (node.cpu !== status.cpu)
       node.cpu = status.cpu
-    if (node.gpu !== status.gpu)
-      node.gpu = status.gpu
+    const gpu = gpuUsageFromStatus(status)
+    if (node.gpu !== gpu)
+      node.gpu = gpu
     if (node.ram !== status.ram)
       node.ram = status.ram
     if (node.swap !== status.swap)
